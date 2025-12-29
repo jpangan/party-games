@@ -48,13 +48,6 @@ export default function SingFastPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-500 via-pink-500 to-red-500 p-8 flex items-center justify-center">
       <div className="w-full max-w-4xl">
-        {/* Back Button */}
-        <Link href="/" className="mb-8 inline-block">
-          <Button variant="retro" size="lg" className="font-ui">
-            ← Back to Games
-          </Button>
-        </Link>
-
         {/* Game Content */}
         <div className="flex min-h-[60vh] items-center justify-center">
           {gameState === "idle" && (
@@ -62,14 +55,21 @@ export default function SingFastPage() {
               <h1 className="font-headline mb-8 text-6xl md:text-8xl text-white drop-shadow-[4px_4px_0px_rgba(0,0,0,0.3)]">
                 SING FAST
               </h1>
-              <Button
-                variant="retro"
-                size="xl"
-                onClick={startGame}
-                className="animate-pulse-glow"
-              >
-                START GAME
-              </Button>
+              <div className="flex flex-col items-center gap-8">
+                <Button
+                  variant="retro"
+                  size="xl"
+                  onClick={startGame}
+                  className="animate-pulse-glow"
+                >
+                  START GAME
+                </Button>
+                <Link href="/">
+                  <Button variant="retro" size="xl" className="font-ui">
+                    Back
+                  </Button>
+                </Link>
+              </div>
             </div>
           )}
 
@@ -85,12 +85,12 @@ export default function SingFastPage() {
 
           {gameState === "word-display" && (
             <div className="text-center animate-slide-in w-full px-4">
-              <div className="pixel-border-thick bg-yellow-300 p-8 md:p-16 lg:p-20 mb-6 md:mb-8 inline-block max-w-full">
-                <h2 className="font-headline text-3xl md:text-7xl lg:text-9xl xl:text-[12rem] text-[#2d3436] animate-pulse-glow whitespace-nowrap">
+              <div className="pixel-border-thick bg-yellow-300 p-8 md:p-16 lg:p-20 mb-8 w-full">
+                <h2 className="font-headline text-3xl md:text-7xl lg:text-8xl xl:text-[10rem] text-[#2d3436] animate-pulse-glow whitespace-nowrap">
                   {word.toUpperCase()}
                 </h2>
               </div>
-              <div className="w-full flex justify-center">
+              <div className="w-full flex flex-col items-center gap-8">
                 <Button
                   variant="retro"
                   size="xl"
@@ -99,6 +99,11 @@ export default function SingFastPage() {
                 >
                   NEW WORD
                 </Button>
+                <Link href="/">
+                  <Button variant="retro" size="xl" className="font-ui">
+                    Back to Games
+                  </Button>
+                </Link>
               </div>
             </div>
           )}
