@@ -52,8 +52,8 @@ export default function SingFastPage() {
         <div className="flex min-h-[60vh] items-center justify-center">
           {gameState === "idle" && (
             <div className="text-center animate-slide-in">
-              <h1 className="font-headline mb-8 text-6xl md:text-8xl text-white drop-shadow-[4px_4px_0px_rgba(0,0,0,0.3)]">
-                SING FAST
+              <h1 className="font-headline mb-12 text-4xl md:text-6xl text-white drop-shadow-[4px_4px_0px_rgba(0,0,0,0.3)]">
+                🎙️ SING FAST
               </h1>
               <div className="flex flex-col items-center gap-8">
                 <Button

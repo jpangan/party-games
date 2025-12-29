@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 const GAMES = [
   {
     id: "sing-fast",
-    name: "Sing Fast",
+    name: "🎙️ Sing Fast",
     description: "Sing a random word from popular songs!",
     href: "/sing-fast",
   },
