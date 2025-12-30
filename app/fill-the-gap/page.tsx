@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getRandomWords } from "@/lib/fill-the-gap-words";
-import { playDropSound, cleanupAudioElements } from "@/lib/sounds";
+import { playBellSound, cleanupAudioElements } from "@/lib/sounds";
 
 type GameState = "idle" | "word-display";
 
@@ -24,6 +24,8 @@ function formatWordWithGaps(word: string): string {
 export default function FillTheGapPage() {
   const [gameState, setGameState] = useState<GameState>("idle");
   const [word, setWord] = useState<string>("");
+  const [audioUnlocked, setAudioUnlocked] = useState<boolean>(false);
+  const bellAudioRef = useRef<HTMLAudioElement>(null);
 
   // Cleanup audio elements on component unmount to prevent memory leaks
   useEffect(() => {
@@ -32,25 +34,115 @@ export default function FillTheGapPage() {
     };
   }, []);
 
+  // Set up touch/click listeners to unlock audio on any user interaction
+  useEffect(() => {
+    const unlockOnInteraction = () => {
+      if (!audioUnlocked) {
+        const audio = bellAudioRef.current;
+        if (audio) {
+          // Set initial volume
+          audio.volume = 0.7;
+          const originalVolume = audio.volume;
+          audio.volume = 0.01;
+          audio.currentTime = 0;
+          audio
+            .play()
+            .then(() => {
+              audio.pause();
+              audio.currentTime = 0;
+              audio.volume = originalVolume;
+              setAudioUnlocked(true);
+            })
+            .catch(() => {
+              audio.volume = originalVolume;
+            });
+        }
+      }
+    };
+
+    // Listen for various interaction events
+    const events = ["touchstart", "touchend", "mousedown", "click"];
+    events.forEach((event) => {
+      document.addEventListener(event, unlockOnInteraction, { once: true, passive: true });
+    });
+
+    return () => {
+      events.forEach((event) => {
+        document.removeEventListener(event, unlockOnInteraction);
+      });
+    };
+  }, [audioUnlocked]);
+
+  // Unlock audio context on first user interaction
+  const unlockAudio = () => {
+    if (audioUnlocked) return;
+
+    // Try to unlock by playing a sound with volume 0, then restore volume
+    const audio = bellAudioRef.current;
+    if (audio) {
+      // Ensure volume is set
+      audio.volume = 0.7;
+      const originalVolume = audio.volume;
+      audio.volume = 0.01; // Very low but not 0 (some browsers ignore 0)
+      audio.currentTime = 0;
+
+      audio
+        .play()
+        .then(() => {
+          audio.pause();
+          audio.currentTime = 0;
+          audio.volume = originalVolume;
+          setAudioUnlocked(true);
+        })
+        .catch(() => {
+          audio.volume = originalVolume;
+          // If that fails, just mark as unlocked and try normal play
+          setAudioUnlocked(true);
+        });
+    } else {
+      setAudioUnlocked(true);
+    }
+  };
+
   const startGame = () => {
+    // CRITICAL for mobile: Unlock audio context first, then play sound
+    unlockAudio();
+
     // Get a single random word
     const newWords = getRandomWords(1);
     setWord(newWords[0]);
     setGameState("word-display");
-    // Play drop sound when starting the game
-    playDropSound();
+    // Play bell sound when starting the game
+    playBellSound();
   };
 
   const handleNewRound = () => {
+    // Ensure audio is unlocked
+    if (!audioUnlocked) {
+      unlockAudio();
+    }
+
+    // CRITICAL for mobile: Play sound directly in response to user interaction
+    // This ensures audio context remains unlocked
+    playBellSound();
+
     // Get a new single random word
     const newWords = getRandomWords(1);
     setWord(newWords[0]);
-    // Play drop sound when starting a new round
-    playDropSound();
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-500 via-pink-500 to-red-500 p-8 flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-purple-500 via-pink-500 to-red-500 p-8 flex items-center justify-center relative">
+      {/* Hidden audio element for sound effects */}
+      <audio
+        ref={bellAudioRef}
+        id="bell-sound"
+        src="/sound-effects/bell-sound.wav"
+        preload="auto"
+        playsInline
+        style={{ display: "none" }}
+      />
+
       <div className="w-full max-w-4xl">
         <div className="flex min-h-[60vh] items-center justify-center">
           {gameState === "idle" && (
@@ -79,7 +171,7 @@ export default function FillTheGapPage() {
           {gameState === "word-display" && (
             <div className="text-center animate-slide-in w-full px-4">
               <div className="pixel-border-thick bg-yellow-300 p-8 md:p-16 lg:p-20 mb-8 w-full">
-                <h2 className="font-headline text-4xl md:text-7xl lg:text-8xl xl:text-[10rem] text-[#2d3436] font-mono tracking-wider">
+                <h2 className="font-headline text-3xl md:text-5xl lg:text-6xl xl:text-7xl text-[#2d3436] font-mono tracking-wider">
                   {formatWordWithGaps(word)}
                 </h2>
               </div>
