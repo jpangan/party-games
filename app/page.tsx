@@ -11,8 +11,14 @@ const GAMES = [
   {
     id: "count-and-sit",
     name: "🪑 Count and Sit",
-    description: "Count together and sit down when it's your turn!",
+    description: "Count alone and you're in, count with someone and you're out!",
     href: "/count-and-sit",
+  },
+  {
+    id: "whitney-challenge",
+    name: "🥁 Whitney Challenge",
+    description: "Play the Whitney Houston Drum challenge",
+    href: "/whitney-challenge",
   },
 ];
 
