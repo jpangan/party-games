@@ -26,6 +26,12 @@ const GAMES = [
     description: "Guess the word from the first and last letters!",
     href: "/fill-the-gap",
   },
+  {
+    id: "wrong-answers-only",
+    name: "❌ Wrong Answers Only",
+    description: "Answer easy questions incorrectly!",
+    href: "/wrong-answers-only",
+  },
 ];
 
 export default function Home() {
