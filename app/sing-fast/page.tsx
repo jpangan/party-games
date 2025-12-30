@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getRandomWord } from "@/lib/game-words";
-import { playBellSound, playDropSound } from "@/lib/sounds";
+import { playBellSound, playDropSound, preloadAllSounds } from "@/lib/sounds";
 
 type GameState = "idle" | "countdown" | "card-reveal" | "word-display";
 
@@ -12,33 +12,64 @@ export default function SingFastPage() {
   const [gameState, setGameState] = useState<GameState>("idle");
   const [countdown, setCountdown] = useState(3);
   const [word, setWord] = useState<string>("");
+  const audioUnlockedRef = useRef(false);
+
+  // Preload sounds when component mounts
+  useEffect(() => {
+    preloadAllSounds();
+  }, []);
 
   const startGame = () => {
-    // Go directly to countdown
+    // CRITICAL for mobile: Play sound directly in response to user interaction
+    // This unlocks the audio context on mobile browsers
+    playBellSound();
+    audioUnlockedRef.current = true;
+
+    // Start countdown immediately
     setGameState("countdown");
     setCountdown(3);
   };
 
   useEffect(() => {
     // Countdown sequence: 3, 2, 1
-    if (gameState === "countdown" && countdown > 1) {
-      playBellSound();
-      const timer = setTimeout(() => {
-        setCountdown(countdown - 1);
-      }, 1000);
-      return () => clearTimeout(timer);
-    } else if (gameState === "countdown" && countdown === 1) {
-      // Play final bell sound for "1", then transition to word display
-      playBellSound();
-      setTimeout(() => {
-        playDropSound();
-        setWord(getRandomWord());
-        setGameState("word-display");
-      }, 1000);
+    // Only play sounds if audio context has been unlocked (after user interaction)
+    if (gameState === "countdown" && audioUnlockedRef.current) {
+      if (countdown > 1) {
+        playBellSound();
+        const timer = setTimeout(() => {
+          setCountdown(countdown - 1);
+        }, 1000);
+        return () => clearTimeout(timer);
+      } else if (countdown === 1) {
+        // Play final bell sound for "1", then transition to word display
+        playBellSound();
+        setTimeout(() => {
+          playDropSound();
+          setWord(getRandomWord());
+          setGameState("word-display");
+        }, 1000);
+      }
+    } else if (gameState === "countdown" && !audioUnlockedRef.current) {
+      // If countdown started but audio not unlocked, just update countdown
+      if (countdown > 1) {
+        const timer = setTimeout(() => {
+          setCountdown(countdown - 1);
+        }, 1000);
+        return () => clearTimeout(timer);
+      } else if (countdown === 1) {
+        setTimeout(() => {
+          setWord(getRandomWord());
+          setGameState("word-display");
+        }, 1000);
+      }
     }
   }, [gameState, countdown]);
 
   const handleNewWord = () => {
+    // CRITICAL for mobile: Play sound directly in response to user interaction
+    // This ensures audio context remains unlocked
+    playBellSound();
+
     // Skip "Sing Fast" card and go directly to countdown
     setGameState("countdown");
     setCountdown(3);
