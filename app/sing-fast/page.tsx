@@ -13,12 +13,86 @@ export default function SingFastPage() {
   const [countdown, setCountdown] = useState(3);
   const [word, setWord] = useState<string>("");
   const audioUnlockedRef = useRef(false);
+  const bellAudioRef = useRef<HTMLAudioElement>(null);
+  const dropAudioRef = useRef<HTMLAudioElement>(null);
+
+  // Set up touch/click listeners to unlock audio on any user interaction
+  useEffect(() => {
+    const unlockOnInteraction = () => {
+      if (!audioUnlockedRef.current) {
+        const audio = bellAudioRef.current;
+        if (audio) {
+          // Set initial volume
+          audio.volume = 0.7;
+          const originalVolume = audio.volume;
+          audio.volume = 0.01;
+          audio.currentTime = 0;
+          audio
+            .play()
+            .then(() => {
+              audio.pause();
+              audio.currentTime = 0;
+              audio.volume = originalVolume;
+              audioUnlockedRef.current = true;
+            })
+            .catch(() => {
+              audio.volume = originalVolume;
+            });
+        }
+      }
+    };
+
+    // Listen for various interaction events
+    const events = ["touchstart", "touchend", "mousedown", "click"];
+    events.forEach((event) => {
+      document.addEventListener(event, unlockOnInteraction, { once: true, passive: true });
+    });
+
+    return () => {
+      events.forEach((event) => {
+        document.removeEventListener(event, unlockOnInteraction);
+      });
+    };
+  }, []);
+
+  // Unlock audio context on first user interaction
+  const unlockAudio = () => {
+    if (audioUnlockedRef.current) return;
+
+    // Try to unlock by playing a sound with volume 0, then restore volume
+    const audio = bellAudioRef.current;
+    if (audio) {
+      // Ensure volume is set
+      audio.volume = 0.7;
+      const originalVolume = audio.volume;
+      audio.volume = 0.01; // Very low but not 0 (some browsers ignore 0)
+      audio.currentTime = 0;
+
+      audio
+        .play()
+        .then(() => {
+          audio.pause();
+          audio.currentTime = 0;
+          audio.volume = originalVolume;
+          audioUnlockedRef.current = true;
+        })
+        .catch(() => {
+          audio.volume = originalVolume;
+          // If that fails, just mark as unlocked and try normal play
+          audioUnlockedRef.current = true;
+        });
+    } else {
+      audioUnlockedRef.current = true;
+    }
+  };
 
   const startGame = () => {
-    // CRITICAL for mobile: Play sound directly in response to user interaction
+    // CRITICAL for mobile: Unlock audio context first, then play sound
+    unlockAudio();
+
+    // Play sound directly in response to user interaction
     // This unlocks the audio context on mobile browsers
     playBellSound();
-    audioUnlockedRef.current = true;
 
     // Start countdown immediately
     setGameState("countdown");
@@ -61,6 +135,11 @@ export default function SingFastPage() {
   }, [gameState, countdown]);
 
   const handleNewWord = () => {
+    // Ensure audio is unlocked
+    if (!audioUnlockedRef.current) {
+      unlockAudio();
+    }
+
     // CRITICAL for mobile: Play sound directly in response to user interaction
     // This ensures audio context remains unlocked
     playBellSound();
@@ -75,6 +154,7 @@ export default function SingFastPage() {
     <div className="min-h-screen bg-gradient-to-br from-purple-500 via-pink-500 to-red-500 p-8 flex items-center justify-center">
       {/* Hidden audio elements for sound effects */}
       <audio
+        ref={bellAudioRef}
         id="bell-sound"
         src="/sound-effects/bell-sound.wav"
         preload="auto"
@@ -82,6 +162,7 @@ export default function SingFastPage() {
         style={{ display: "none" }}
       />
       <audio
+        ref={dropAudioRef}
         id="drop-sound"
         src="/sound-effects/drop-sound.wav"
         preload="auto"
