@@ -32,6 +32,12 @@ const GAMES = [
     description: "Answer easy questions incorrectly!",
     href: "/wrong-answers-only",
   },
+  {
+    id: "emogination",
+    name: "🎨 Emogination",
+    description: "Use your imagination to guess the food/drink using emoji",
+    href: "/emogination",
+  },
 ];
 
 export default function Home() {
