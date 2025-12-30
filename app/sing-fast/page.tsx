@@ -9,12 +9,30 @@ import { playBellSound, playDropSound } from "@/lib/sounds";
 type GameState = "idle" | "countdown" | "card-reveal" | "word-display";
 
 export default function SingFastPage() {
+  // Initialize state from localStorage
   const [gameState, setGameState] = useState<GameState>("idle");
   const [countdown, setCountdown] = useState(3);
   const [word, setWord] = useState<string>("");
-  const audioUnlockedRef = useRef(false);
+  const [showSoundPrompt, setShowSoundPrompt] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const soundEnabledStored = localStorage.getItem("sound-enabled");
+    return soundEnabledStored !== "true";
+  });
+  const audioUnlockedRef = useRef<boolean>(
+    typeof window !== "undefined" && localStorage.getItem("sound-enabled") === "true"
+  );
   const bellAudioRef = useRef<HTMLAudioElement>(null);
   const dropAudioRef = useRef<HTMLAudioElement>(null);
+
+  // Show prompt after a delay if sound not enabled
+  useEffect(() => {
+    if (showSoundPrompt) {
+      const timer = setTimeout(() => {
+        // Prompt is already shown, this just ensures it stays visible
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [showSoundPrompt]);
 
   // Set up touch/click listeners to unlock audio on any user interaction
   useEffect(() => {
@@ -86,6 +104,46 @@ export default function SingFastPage() {
     }
   };
 
+  // Enable sounds when user clicks the prompt
+  const handleEnableSounds = async () => {
+    const audio = bellAudioRef.current;
+    if (audio) {
+      audio.volume = 0.7;
+      audio.currentTime = 0;
+
+      try {
+        await audio.play();
+        // Success - sounds are enabled
+        audio.pause();
+        audio.currentTime = 0;
+        audioUnlockedRef.current = true;
+        setShowSoundPrompt(false);
+        localStorage.setItem("sound-enabled", "true");
+
+        // Play a confirmation sound
+        setTimeout(() => {
+          playBellSound();
+        }, 100);
+      } catch (error) {
+        console.warn("Failed to enable sounds:", error);
+        // Still mark as enabled and hide prompt - user tried
+        audioUnlockedRef.current = true;
+        setShowSoundPrompt(false);
+        localStorage.setItem("sound-enabled", "true");
+      }
+    } else {
+      // No audio element, just hide prompt
+      setShowSoundPrompt(false);
+      localStorage.setItem("sound-enabled", "true");
+    }
+  };
+
+  // Dismiss prompt without enabling
+  const handleDismissPrompt = () => {
+    setShowSoundPrompt(false);
+    localStorage.setItem("sound-enabled", "false");
+  };
+
   const startGame = () => {
     // CRITICAL for mobile: Unlock audio context first, then play sound
     unlockAudio();
@@ -151,7 +209,7 @@ export default function SingFastPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-500 via-pink-500 to-red-500 p-8 flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-purple-500 via-pink-500 to-red-500 p-8 flex items-center justify-center relative">
       {/* Hidden audio elements for sound effects */}
       <audio
         ref={bellAudioRef}
@@ -169,6 +227,39 @@ export default function SingFastPage() {
         playsInline
         style={{ display: "none" }}
       />
+
+      {/* Sound Enable Prompt */}
+      {showSoundPrompt && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="pixel-border-thick bg-white p-6 md:p-8 max-w-md w-full text-center animate-slide-in">
+            <div className="mb-4 text-4xl">🔊</div>
+            <h2 className="font-headline text-2xl md:text-3xl text-[#2d3436] mb-4">
+              Enable Sounds?
+            </h2>
+            <p className="font-ui text-lg text-gray-700 mb-6">
+              Click the button below to enable sound effects for a better game experience!
+            </p>
+            <div className="flex flex-col gap-3">
+              <Button
+                variant="retro"
+                size="xl"
+                onClick={handleEnableSounds}
+                className="w-full"
+              >
+                🔊 Enable Sounds
+              </Button>
+              <Button
+                variant="retro"
+                size="lg"
+                onClick={handleDismissPrompt}
+                className="w-full bg-gray-300 hover:bg-gray-400 text-gray-700"
+              >
+                Continue Without Sound
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="w-full max-w-4xl">
         {/* Game Content */}
