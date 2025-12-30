@@ -20,6 +20,18 @@ const GAMES = [
     description: "Play the Whitney Houston Drum challenge",
     href: "/whitney-challenge",
   },
+  {
+    id: "fill-the-gap",
+    name: "🔤 Fill the Gap",
+    description: "Guess the word from the first and last letters!",
+    href: "/fill-the-gap",
+  },
+  {
+    id: "wrong-answers-only",
+    name: "❌ Wrong Answers Only",
+    description: "Answer easy questions incorrectly!",
+    href: "/wrong-answers-only",
+  },
 ];
 
 export default function Home() {
