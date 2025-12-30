@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getRandomWord } from "@/lib/game-words";
-import { playBellSound, playDropSound, preloadAllSounds } from "@/lib/sounds";
+import { playBellSound, playDropSound } from "@/lib/sounds";
 
 type GameState = "idle" | "countdown" | "card-reveal" | "word-display";
 
@@ -13,11 +13,6 @@ export default function SingFastPage() {
   const [countdown, setCountdown] = useState(3);
   const [word, setWord] = useState<string>("");
   const audioUnlockedRef = useRef(false);
-
-  // Preload sounds when component mounts
-  useEffect(() => {
-    preloadAllSounds();
-  }, []);
 
   const startGame = () => {
     // CRITICAL for mobile: Play sound directly in response to user interaction
@@ -78,6 +73,22 @@ export default function SingFastPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-500 via-pink-500 to-red-500 p-8 flex items-center justify-center">
+      {/* Hidden audio elements for sound effects */}
+      <audio
+        id="bell-sound"
+        src="/sound-effects/bell-sound.wav"
+        preload="auto"
+        playsInline
+        style={{ display: "none" }}
+      />
+      <audio
+        id="drop-sound"
+        src="/sound-effects/drop-sound.wav"
+        preload="auto"
+        playsInline
+        style={{ display: "none" }}
+      />
+
       <div className="w-full max-w-4xl">
         {/* Game Content */}
         <div className="flex min-h-[60vh] items-center justify-center">

@@ -1,54 +1,39 @@
 /**
  * Utility functions for playing sound effects
- * Mobile-compatible implementation following browser autoplay policies
+ * Uses embedded HTML audio elements for better mobile compatibility
  */
-
-// Cache for preloaded audio objects
-const audioCache: Map<string, HTMLAudioElement> = new Map();
 
 /**
- * Preload and cache an audio file
- * @param soundName - Name of the sound file (without extension)
+ * Get audio element by ID selector
+ * @param soundName - Name of the sound file (without extension, used as element ID)
  */
-function getAudio(soundName: "bell-sound" | "drop-sound"): HTMLAudioElement {
-  if (typeof window === "undefined") {
-    return {} as HTMLAudioElement;
+function getAudioElement(soundName: "bell-sound" | "drop-sound"): HTMLAudioElement | null {
+  if (typeof window === "undefined") return null;
+
+  const audio = document.getElementById(soundName) as HTMLAudioElement;
+
+  if (!audio) {
+    console.warn(`Audio element with id "${soundName}" not found in DOM`);
+    return null;
   }
-
-  // Return cached audio if available
-  if (audioCache.has(soundName)) {
-    return audioCache.get(soundName)!;
-  }
-
-  // Create and configure new audio element with mobile-friendly attributes
-  const audio = new Audio(`/sound-effects/${soundName}.wav`);
-  audio.volume = 0.7;
-  audio.preload = "auto";
-
-  // Critical for iOS Safari - allows inline playback
-  // Set both lowercase and camelCase for maximum compatibility
-  audio.setAttribute("playsinline", "true");
-  // @ts-expect-error - playsInline is a valid HTML attribute for iOS but not in TypeScript types
-  audio.playsInline = true;
-
-  // Load the audio
-  audio.load();
-
-  // Cache the audio element
-  audioCache.set(soundName, audio);
 
   return audio;
 }
 
 /**
- * Play a sound effect from the sound-effects directory
+ * Play a sound effect using the embedded HTML audio element
  * This function must be called directly in response to user interaction for mobile browsers
- * @param soundName - Name of the sound file (without extension)
+ * @param soundName - Name of the sound file (without extension, used as element ID)
  */
 export function playSound(soundName: "bell-sound" | "drop-sound"): void {
   if (typeof window === "undefined") return;
 
-  const audio = getAudio(soundName);
+  const audio = getAudioElement(soundName);
+
+  if (!audio) return;
+
+  // Set volume
+  audio.volume = 0.7;
 
   // Reset to beginning and play
   audio.currentTime = 0;
@@ -63,17 +48,6 @@ export function playSound(soundName: "bell-sound" | "drop-sound"): void {
       // The user needs to interact with the page first
     });
   }
-}
-
-/**
- * Preload all sound effects
- * Call this after user interaction to ensure sounds are ready
- */
-export function preloadAllSounds(): void {
-  if (typeof window === "undefined") return;
-
-  getAudio("bell-sound");
-  getAudio("drop-sound");
 }
 
 /**
