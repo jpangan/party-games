@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getRandomWord } from "@/lib/game-words";
-import { playBellSound, playDropSound } from "@/lib/sounds";
+import { playBellSound, playDropSound, cleanupAudioElements } from "@/lib/sounds";
 
 type GameState = "idle" | "countdown" | "card-reveal" | "word-display";
 
@@ -18,7 +18,8 @@ export default function SingFastPage() {
     const soundEnabledStored = localStorage.getItem("sound-enabled");
     return soundEnabledStored !== "true";
   });
-  const audioUnlockedRef = useRef<boolean>(
+  // Use state instead of ref so useEffect can react to changes
+  const [audioUnlocked, setAudioUnlocked] = useState<boolean>(
     typeof window !== "undefined" && localStorage.getItem("sound-enabled") === "true"
   );
   const bellAudioRef = useRef<HTMLAudioElement>(null);
@@ -34,10 +35,17 @@ export default function SingFastPage() {
     }
   }, [showSoundPrompt]);
 
+  // Cleanup audio elements on component unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      cleanupAudioElements();
+    };
+  }, []);
+
   // Set up touch/click listeners to unlock audio on any user interaction
   useEffect(() => {
     const unlockOnInteraction = () => {
-      if (!audioUnlockedRef.current) {
+      if (!audioUnlocked) {
         const audio = bellAudioRef.current;
         if (audio) {
           // Set initial volume
@@ -51,7 +59,7 @@ export default function SingFastPage() {
               audio.pause();
               audio.currentTime = 0;
               audio.volume = originalVolume;
-              audioUnlockedRef.current = true;
+              setAudioUnlocked(true);
             })
             .catch(() => {
               audio.volume = originalVolume;
@@ -71,11 +79,11 @@ export default function SingFastPage() {
         document.removeEventListener(event, unlockOnInteraction);
       });
     };
-  }, []);
+  }, [audioUnlocked]);
 
   // Unlock audio context on first user interaction
   const unlockAudio = () => {
-    if (audioUnlockedRef.current) return;
+    if (audioUnlocked) return;
 
     // Try to unlock by playing a sound with volume 0, then restore volume
     const audio = bellAudioRef.current;
@@ -92,15 +100,15 @@ export default function SingFastPage() {
           audio.pause();
           audio.currentTime = 0;
           audio.volume = originalVolume;
-          audioUnlockedRef.current = true;
+          setAudioUnlocked(true);
         })
         .catch(() => {
           audio.volume = originalVolume;
           // If that fails, just mark as unlocked and try normal play
-          audioUnlockedRef.current = true;
+          setAudioUnlocked(true);
         });
     } else {
-      audioUnlockedRef.current = true;
+      setAudioUnlocked(true);
     }
   };
 
@@ -116,7 +124,7 @@ export default function SingFastPage() {
         // Success - sounds are enabled
         audio.pause();
         audio.currentTime = 0;
-        audioUnlockedRef.current = true;
+        setAudioUnlocked(true);
         setShowSoundPrompt(false);
         localStorage.setItem("sound-enabled", "true");
 
@@ -127,7 +135,7 @@ export default function SingFastPage() {
       } catch (error) {
         console.warn("Failed to enable sounds:", error);
         // Still mark as enabled and hide prompt - user tried
-        audioUnlockedRef.current = true;
+        setAudioUnlocked(true);
         setShowSoundPrompt(false);
         localStorage.setItem("sound-enabled", "true");
       }
@@ -160,7 +168,7 @@ export default function SingFastPage() {
   useEffect(() => {
     // Countdown sequence: 3, 2, 1
     // Only play sounds if audio context has been unlocked (after user interaction)
-    if (gameState === "countdown" && audioUnlockedRef.current) {
+    if (gameState === "countdown" && audioUnlocked) {
       if (countdown > 1) {
         playBellSound();
         const timer = setTimeout(() => {
@@ -176,7 +184,7 @@ export default function SingFastPage() {
           setGameState("word-display");
         }, 1000);
       }
-    } else if (gameState === "countdown" && !audioUnlockedRef.current) {
+    } else if (gameState === "countdown" && !audioUnlocked) {
       // If countdown started but audio not unlocked, just update countdown
       if (countdown > 1) {
         const timer = setTimeout(() => {
@@ -190,11 +198,11 @@ export default function SingFastPage() {
         }, 1000);
       }
     }
-  }, [gameState, countdown]);
+  }, [gameState, countdown, audioUnlocked]);
 
   const handleNewWord = () => {
     // Ensure audio is unlocked
-    if (!audioUnlockedRef.current) {
+    if (!audioUnlocked) {
       unlockAudio();
     }
 

@@ -8,6 +8,12 @@ const GAMES = [
     description: "Sing a random word from popular songs!",
     href: "/sing-fast",
   },
+  {
+    id: "count-and-sit",
+    name: "🪑 Count and Sit",
+    description: "Count together and sit down when it's your turn!",
+    href: "/count-and-sit",
+  },
 ];
 
 export default function Home() {
@@ -41,10 +47,10 @@ export default function Home() {
                 className="group block animate-slide-in"
               >
                 <div className="pixel-border-thick bg-white p-8 text-center transition-all duration-300 hover:scale-105 hover:bg-yellow-50">
-                  <h2 className="font-headline mb-4 text-3xl md:text-4xl text-[#2d3436]">
+                  <h2 className="font-headline mb-4 text-3xl md:text-4xl text-[#2d3436] md:min-h-28">
                     {game.name}
                   </h2>
-                  <p className="font-ui mb-6 text-lg text-gray-600">
+                  <p className="font-ui mb-6 text-lg text-gray-600 md:min-h-24">
                     {game.description}
                   </p>
                   <Button
